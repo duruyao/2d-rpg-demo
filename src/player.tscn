@@ -423,7 +423,7 @@ script = ExtResource("1_1jxpc")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_hahux")
 animation = &"back_idle"
-frame_progress = 0.190468
+frame_progress = 0.562983
 offset = Vector2(0, -15)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
