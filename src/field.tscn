@@ -163,7 +163,7 @@ polygon = PackedVector2Array(0, 0, 0, 14, -29, 14, -30, 83, 0, 83, 0, 432, 606, 
 
 [node name="Exits" type="Node2D" parent="."]
 
-[node name="East" type="Area2D" parent="Exits" groups=["Entrance"]]
+[node name="East" type="Area2D" parent="Exits" groups=["Exit"]]
 collision_layer = 8
 collision_mask = 2
 script = ExtResource("4_7lij8")
@@ -172,7 +172,7 @@ script = ExtResource("4_7lij8")
 position = Vector2(802, 257)
 shape = SubResource("CapsuleShape2D_vsmom")
 
-[node name="South" type="Area2D" parent="Exits" groups=["Entrance"]]
+[node name="South" type="Area2D" parent="Exits" groups=["Exit"]]
 collision_layer = 8
 collision_mask = 2
 script = ExtResource("4_7lij8")
@@ -182,7 +182,7 @@ position = Vector2(641, 454)
 rotation = 1.5708
 shape = SubResource("CapsuleShape2D_3jd3k")
 
-[node name="West" type="Area2D" parent="Exits" groups=["Entrance"]]
+[node name="West" type="Area2D" parent="Exits" groups=["Exit"]]
 collision_layer = 8
 collision_mask = 2
 script = ExtResource("4_7lij8")
@@ -191,7 +191,7 @@ script = ExtResource("4_7lij8")
 position = Vector2(-29, 48)
 shape = SubResource("CapsuleShape2D_pgu5f")
 
-[node name="North" type="Area2D" parent="Exits" groups=["Entrance"]]
+[node name="North" type="Area2D" parent="Exits" groups=["Exit"]]
 collision_layer = 8
 collision_mask = 2
 script = ExtResource("4_7lij8")

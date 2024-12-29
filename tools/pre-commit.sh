@@ -13,7 +13,7 @@ for file in "${files[@]}"; do
     exit 1
   fi
   stat_command="stat -c %s"
-  if [[ "$(uname)" == "Darwin" ]]; then
+  if [[ "Darwin" == "$(uname)" ]]; then
       stat_command="stat -f %z"
   fi
   if [ "$($stat_command "${file}")" -gt 1048576 ]; then

@@ -7,8 +7,9 @@ enum State {
 	DEATH
 }
 const _MOVE_SPEED              := 40.0
+const _MAX_HP                  := 150.0
 var _direction                 := Vector2.DOWN
-var _hp                        := 150.0
+var _hp                        := _MAX_HP
 var _attack_damage             := 10.0
 var _player: Node2D            =  null
 var _can_attack                := true
@@ -41,16 +42,16 @@ func _get_player() -> void:
 	if _is_near_entrance and _entrance:
 		if not _is_freezing: # NOTE: _entrance.global_position is (0, 0)
 			_direction = (_entrance.physics_global_position() - global_position).normalized()
-			velocity = _direction * _MOVE_SPEED * int(_alive()) * -1
+			velocity = _direction * _MOVE_SPEED * int(alive()) * -1
 			_is_freezing = true
 			_set_later("_is_freezing", false, _freeze_duration)
 	elif _player and not _should_attack:
 		_direction = (_player.global_position - global_position).normalized()
-		velocity = _direction * _MOVE_SPEED * int(_alive())
+		velocity = _direction * _MOVE_SPEED * int(alive())
 
 
 func _play_animation(state: State) -> void:
-	if state == State.DEATH:
+	if State.DEATH == state:
 		$AnimatedSprite2D.play("death")
 		return
 	var anim_name := ""
@@ -67,19 +68,26 @@ func _play_animation(state: State) -> void:
 		State.ATTACK: "attack",
 		State.DEATH: "death",
 	}[state]
-	$AnimatedSprite2D.flip_h = (anim_dir == Vector2.LEFT)
+	$AnimatedSprite2D.flip_h = Vector2.LEFT == anim_dir
 	$AnimatedSprite2D.play(anim_name)
 
 
 func _attack_player() -> void:
 	# TODO: improve enemy lock system
 	if _player.has_method("take_damage"):
-		print("%s's HP: %.0f - %.0f" % [_player.name, _player.hp(), _attack_damage])
+		print("%s's HP: %.0f - %.0f =" % [_player.name, _player.hp(), _attack_damage])
 		_player.take_damage(_attack_damage)
+		print("%.0f" % _player.hp())
 	_can_attack = false
 	_is_attacking = true
 	_set_later( "_can_attack", true, _attack_cooldown_duration)
 	_set_later( "_is_attacking", false, _attack_animation_duration)
+
+
+func _update_health_bar() -> void:
+	var bar := $HealthBar
+	bar.visible = _hp < _MAX_HP
+	bar.value = _hp * 100.0 / _MAX_HP
 
 
 func hp() -> float:
@@ -88,9 +96,10 @@ func hp() -> float:
 
 func take_damage(damage: float) -> void:
 	_hp = min(_hp, _hp - damage)
+	_update_health_bar()
 
 
-func _alive()-> bool:
+func alive()-> bool:
 	return _hp > 0.0
 
 
@@ -100,16 +109,17 @@ func _die() -> void:
 
 
 func _ready() -> void:
+	$HealthBar.visible = false
 	$AnimatedSprite2D.play("front_idle")
 
 
 func _physics_process(_delta: float) -> void:
 	_get_player()
-	if not _alive():
+	if not alive():
 		if not _is_dying:
 			_play_animation(State.DEATH)
 			_die()
-	elif  _should_attack and _can_attack and not _is_attacking:
+	elif  _should_attack and _can_attack and _player.alive() and not _is_attacking:
 		_play_animation(State.ATTACK)
 		_attack_player()
 	elif velocity.length() != 0 and not _is_attacking:
@@ -120,32 +130,32 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_detection_area_body_entered(body: Node2D) -> void:
-	if body.name == "Player":
+	if body.is_in_group("Player"):
 		_player = body
 
 
 func _on_detection_area_body_exited(body: Node2D) -> void:
-	if body.name == "Player":
+	if body.is_in_group("Player"):
 		_player = null
 
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
-	if body.name == "Player":
+	if body.is_in_group("Player"):
 		_should_attack = true
 
 
 func _on_hitbox_body_exited(body: Node2D) -> void:
-	if body.name == "Player":
+	if body.is_in_group("Player"):
 		_should_attack = false
 
 
 func _on_detection_area_area_entered(area: Area2D) -> void:
-	if area.is_in_group("Entrance"):
+	if area.is_in_group("Exit"):
 		_entrance = area
 		_is_near_entrance = true
 
 
 func _on_detection_area_area_exited(area: Area2D) -> void:
-	if area.is_in_group("Entrance"):
+	if area.is_in_group("Exit"):
 		_entrance = null
 		_is_near_entrance = false
