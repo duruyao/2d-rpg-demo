@@ -19,6 +19,8 @@ var _is_attacking              := false
 var _attack_animation_duration := 1.0
 var _is_dying                  := false
 var _death_animation_duration  := 1.0
+var _field_camera: Camera2D    =  null
+var _canyon_camera: Camera2D   =  null
 
 
 func _set_later(property: StringName, value: Variant, delay: float = 0.0, object: Object = self) -> void:
@@ -95,7 +97,15 @@ func _die() -> void:
 	_call_later("queue_free", [], _death_animation_duration)
 
 
+func change_camera(scene_name: String) -> void:
+	_field_camera.enabled = "Field" == scene_name
+	_canyon_camera.enabled = "Canyon" == scene_name
+
+
 func _ready() -> void:
+	_field_camera = $FieldCamera
+	_canyon_camera = $CanyonCamera
+	change_camera("Field")
 	$AnimatedSprite2D.play("front_idle")
 
 
@@ -116,8 +126,10 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
-	_enemy = body
+	if body.is_in_group("Enemy"):
+		_enemy = body
 
 
-func _on_hitbox_body_exited(_body: Node2D) -> void:
-	_enemy = null
+func _on_hitbox_body_exited(body: Node2D) -> void:
+	if body.is_in_group("Enemy"):
+		_enemy = null

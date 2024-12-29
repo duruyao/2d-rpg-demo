@@ -422,6 +422,7 @@ radius = 18.0
 [node name="Player" type="CharacterBody2D"]
 y_sort_enabled = true
 collision_layer = 3
+motion_mode = 1
 script = ExtResource("1_1jxpc")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
@@ -440,12 +441,23 @@ collision_mask = 4
 position = Vector2(0, -5)
 shape = SubResource("CircleShape2D_n562w")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="FieldCamera" type="Camera2D" parent="."]
 zoom = Vector2(4, 4)
 limit_left = 0
 limit_top = 0
 limit_right = 768
 limit_bottom = 432
+limit_smoothed = true
+rotation_smoothing_enabled = true
+drag_horizontal_enabled = true
+drag_vertical_enabled = true
+
+[node name="CanyonCamera" type="Camera2D" parent="."]
+zoom = Vector2(4, 4)
+limit_left = 0
+limit_top = 0
+limit_right = 512
+limit_bottom = 288
 limit_smoothed = true
 rotation_smoothing_enabled = true
 drag_horizontal_enabled = true

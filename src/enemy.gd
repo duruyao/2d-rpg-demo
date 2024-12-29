@@ -18,6 +18,10 @@ var _is_attacking              := false
 var _attack_animation_duration := 1.0
 var _is_dying                  := false
 var _death_animation_duration  := 1.0
+var _entrance: Area2D          =  null
+var _is_near_entrance          := false
+var _is_freezing               := false
+var _freeze_duration           := 2.0
 
 
 func _set_later(property: StringName, value: Variant, delay: float = 0.0, object: Object = self) -> void:
@@ -34,8 +38,14 @@ func _call_later(method: StringName, args: Array = [], delay: float = 0.0, objec
 
 func _get_player() -> void:
 	velocity = Vector2.ZERO
-	if _player:
-		_direction = (_player.position - position).normalized()
+	if _is_near_entrance and _entrance:
+		if not _is_freezing: # NOTE: _entrance.global_position is (0, 0)
+			_direction = (_entrance.physics_global_position() - global_position).normalized()
+			velocity = _direction * _MOVE_SPEED * int(_alive()) * -1
+			_is_freezing = true
+			_set_later("_is_freezing", false, _freeze_duration)
+	elif _player and not _should_attack:
+		_direction = (_player.global_position - global_position).normalized()
 		velocity = _direction * _MOVE_SPEED * int(_alive())
 
 
@@ -110,17 +120,32 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_detection_area_body_entered(body: Node2D) -> void:
-	_player = body
+	if body.name == "Player":
+		_player = body
 
 
-func _on_detection_area_body_exited(_body: Node2D) -> void:
-	_player = null
+func _on_detection_area_body_exited(body: Node2D) -> void:
+	if body.name == "Player":
+		_player = null
 
 
-func _on_hitbox_body_entered(_body: Node2D) -> void:
-	_should_attack = true
+func _on_hitbox_body_entered(body: Node2D) -> void:
+	if body.name == "Player":
+		_should_attack = true
 
 
-func _on_hitbox_body_exited(_body: Node2D) -> void:
-	#	_player = null
-	_should_attack = false
+func _on_hitbox_body_exited(body: Node2D) -> void:
+	if body.name == "Player":
+		_should_attack = false
+
+
+func _on_detection_area_area_entered(area: Area2D) -> void:
+	if area.is_in_group("Entrance"):
+		_entrance = area
+		_is_near_entrance = true
+
+
+func _on_detection_area_area_exited(area: Area2D) -> void:
+	if area.is_in_group("Entrance"):
+		_entrance = null
+		_is_near_entrance = false

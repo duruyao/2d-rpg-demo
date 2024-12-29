@@ -452,12 +452,14 @@ animations = [{
 radius = 5.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq1fb"]
-radius = 40.0
+radius = 80.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_w65rh"]
 
 [node name="Enemy" type="CharacterBody2D"]
 collision_layer = 5
+collision_mask = 9
+motion_mode = 1
 script = ExtResource("1_8nhbk")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
@@ -472,7 +474,7 @@ shape = SubResource("CircleShape2D_5c0eq")
 [node name="DetectionArea" type="Area2D" parent="."]
 position = Vector2(2, 0)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 10
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectionArea"]
 shape = SubResource("CircleShape2D_jq1fb")
@@ -484,6 +486,8 @@ collision_mask = 2
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
 shape = SubResource("CircleShape2D_w65rh")
 
+[connection signal="area_entered" from="DetectionArea" to="." method="_on_detection_area_area_entered"]
+[connection signal="area_exited" from="DetectionArea" to="." method="_on_detection_area_area_exited"]
 [connection signal="body_entered" from="DetectionArea" to="." method="_on_detection_area_body_entered"]
 [connection signal="body_exited" from="DetectionArea" to="." method="_on_detection_area_body_exited"]
 [connection signal="body_entered" from="Hitbox" to="." method="_on_hitbox_body_entered"]
