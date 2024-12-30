@@ -1,0 +1,16 @@
+extends Node
+
+const FIELD_SCENE       := "Field"
+const FIELD_SCENE_PATH  := "res://src/field.tscn"
+const CANYON_SCENE      := "Canyon"
+const CANYON_SCENE_PATH := "res://src/canyon.tscn"
+const EXIT_GROUP        := "Exit"
+const EXITS_NODE        := "Exits"
+const EAST_EXIT_NODE    := "East"
+const SOUTH_EXIT_NODE   := "South"
+const WEST_EXIT_NODE    := "West"
+const NORTH_EXIT_NODE   := "North"
+const ENEMY_NODE        := "Enemy"
+const ENEMY_GROUP       := "Enemy"
+const PLAYER_NODE       := "Player"
+const PLAYER_GROUP      := "Player"

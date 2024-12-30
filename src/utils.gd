@@ -1,6 +1,6 @@
 extends Node
 
-func vector2_to_lrud(v: Vector2) -> Vector2:
+func vector_to_lrud(v: Vector2) -> Vector2:
 	var left_dot       := v.dot(Vector2.LEFT)
 	var right_dot      := v.dot(Vector2.RIGHT)
 	var up_dot         := v.dot(Vector2.UP)
