@@ -201,11 +201,17 @@ position = Vector2(743, -17)
 rotation = 1.5708
 shape = SubResource("CapsuleShape2D_hsfsu")
 
-[node name="Player" parent="." groups=["Player"] instance=ExtResource("5_dmc4w")]
+[node name="Player" parent="." instance=ExtResource("5_dmc4w")]
 position = Vector2(300, 200)
 
-[node name="Enemy" parent="." groups=["Enemy"] instance=ExtResource("6_1lm32")]
+[node name="Enemy" parent="." instance=ExtResource("6_1lm32")]
 position = Vector2(400, 300)
+
+[node name="Enemy2" parent="." instance=ExtResource("6_1lm32")]
+position = Vector2(100, 350)
+
+[node name="Enemy3" parent="." instance=ExtResource("6_1lm32")]
+position = Vector2(550, 100)
 
 [connection signal="body_entered" from="Exits/East" to="Exits/East" method="_on_body_entered"]
 [connection signal="body_entered" from="Exits/South" to="Exits/South" method="_on_body_entered"]

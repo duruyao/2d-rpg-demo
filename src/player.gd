@@ -13,30 +13,31 @@ enum AudioState {
 	ATTACK,
 	DEATH,
 }
-const INPUT_ACTION_MOVE_LEFT           := "move_left"
-const INPUT_ACTION_MOVE_RIGHT          := "move_right"
-const INPUT_ACTION_MOVE_UP             := "move_up"
-const INPUT_ACTION_MOVE_DOWN           := "move_down"
-const INPUT_ACTION_RUN                 := "run"
-const INPUT_ACTION_ATTACK              := "attack"
-const ANIMATION_DIRECTION_FRONT        := "front_"
-const ANIMATION_DIRECTION_BACK         := "back_"
-const ANIMATION_DIRECTION_SIDE         := "side_"
-const ANIMATION_STATE_IDLE             := "idle"
-const ANIMATION_STATE_MOVE             := "move"
-const ANIMATION_STATE_ATTACK           := "attack"
-const ANIMATION_STATE_DEATH            := "death"
-const _WALK_SPEED                      := 60.0
-const _RUN_SPEED                       := 160.0
-const _MAX_HP                          := 100.0
-const _ATTACK_DAMAGE                   := 20.0
-const _ATTACK_COOLDOWN_DURATION        := 1.0
-const _ATTACK_ANIMATION_DURATION       := 1.0
-const _ATTACK_DELAY                    := 0.3
-const _DEATH_ANIMATION_DURATION        := 1.0
-const _RELIVE_COOLDOWN_DURATION        := 5.0
-const _INVINCIBILITY_DURATION          := 1.5
-var _hp                                := _MAX_HP
+const INPUT_ACTION_MOVE_LEFT     := "move_left"
+const INPUT_ACTION_MOVE_RIGHT    := "move_right"
+const INPUT_ACTION_MOVE_UP       := "move_up"
+const INPUT_ACTION_MOVE_DOWN     := "move_down"
+const INPUT_ACTION_RUN           := "run"
+const INPUT_ACTION_ATTACK        := "attack"
+const ANIMATION_DIRECTION_FRONT  := "front_"
+const ANIMATION_DIRECTION_BACK   := "back_"
+const ANIMATION_DIRECTION_SIDE   := "side_"
+const ANIMATION_STATE_IDLE       := "idle"
+const ANIMATION_STATE_MOVE       := "move"
+const ANIMATION_STATE_ATTACK     := "attack"
+const ANIMATION_STATE_DEATH      := "death"
+const _ATTACK_COOLDOWN_DURATION  := 1.0
+const _ATTACK_ANIMATION_DURATION := 1.0
+const _ATTACK_DELAY              := 0.3
+const _DEATH_ANIMATION_DURATION  := 1.0
+const _RELIVE_COOLDOWN_DURATION  := 5.0
+const _INVINCIBILITY_DURATION    := 1.5
+@export var _walk_speed := 60.0
+@export var _run_speed := 160.0
+@export var _max_hp := 100.0
+@export var _attack_damage := 20.0
+
+var _hp                                := 0.0
 var _direction                         := Vector2.DOWN
 var _should_run                        := false
 var _can_attack                        := true
@@ -44,13 +45,14 @@ var _should_attack                     := false
 var _is_attacking                      := false
 var _is_dying                          := false
 var _is_invincible                     := false
-var _enemy: Node2D                     =  null
+var _enemies                           := {}
 var _field_camera: Camera2D            =  null
 var _canyon_camera: Camera2D           =  null
 var _audio_player: AudioStreamPlayer2D =  null
 
 
 func _ready() -> void:
+	_hp = _max_hp
 	$HealthBar.visible = false
 	_field_camera = $FieldCamera
 	_canyon_camera = $CanyonCamera
@@ -68,7 +70,7 @@ func _physics_process(_delta: float) -> void:
 	elif  _should_attack and _can_attack and not _is_attacking:
 		_play_animation(AnimationState.ATTACK)
 		_play_audio(AudioState.ATTACK)
-		_attack_enemy()
+		_try_attack_enemies()
 	elif velocity.length() != 0 and not _is_attacking:
 		_play_animation(AnimationState.MOVE)
 		_play_audio(AudioState.RUN if _should_run else AudioState.WALK)
@@ -80,12 +82,12 @@ func _physics_process(_delta: float) -> void:
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
 	if body.is_in_group(Global.ENEMY_GROUP):
-		_enemy = body
+		_enemies[body] = {}
 
 
 func _on_hitbox_body_exited(body: Node2D) -> void:
 	if body.is_in_group(Global.ENEMY_GROUP):
-		_enemy = null
+		_enemies.erase(body)
 
 
 func hp() -> float:
@@ -109,13 +111,13 @@ func change_camera(scene_name: String) -> void:
 
 func _set_later(property: StringName, value: Variant, delay: float = 0.0, object: Object = self) -> void:
 	await get_tree().create_timer(delay).timeout
-	if object and object.has_method("set"):
+	if object:
 		object.set(property, value)
 
 
 func _call_later(method: StringName, args: Array = [], delay: float = 0.0, object: Object = self) -> void:
 	await get_tree().create_timer(delay).timeout
-	if object and object.has_method("callv") and object.has_method(method):
+	if object:
 		object.callv(method, args)
 
 
@@ -125,7 +127,7 @@ func _get_input() -> void:
 		_direction = input_dir
 	_should_run = Input.is_action_pressed(INPUT_ACTION_RUN)
 	_should_attack = Input.is_action_just_pressed(INPUT_ACTION_ATTACK)
-	velocity =  input_dir * (_RUN_SPEED if _should_run else _WALK_SPEED) * int(is_alive())
+	velocity =  input_dir * (_run_speed if _should_run else _walk_speed) * int(is_alive())
 
 
 func _play_animation(state: AnimationState) -> void:
@@ -168,12 +170,16 @@ func _play_audio(state: AudioState) -> void:
 			_audio_player.play()
 
 
-func _attack_enemy() -> void:
-	# TODO: support attacking multiple enemies
-	if _enemy and _can_attack and _enemy.has_method("take_damage"):
-		if _direction.dot(_enemy.position - position) > 0:
-			print_debug("%s's HP: %.0f - %.0f =" % [_enemy.name, _enemy.hp(), _ATTACK_DAMAGE])
-			_call_later("take_damage", [_ATTACK_DAMAGE], _ATTACK_DELAY, _enemy)
+func _attack_enemy(enemy: Node2D)->void:
+	if enemy and _enemies.has(enemy):
+		print_debug("%s's HP: %.0f - %.0f =" % [enemy.name, enemy.hp(), _attack_damage])
+		enemy.take_damage(_attack_damage)
+
+
+func _try_attack_enemies() -> void:
+	# support attacking multiple enemies
+	for enemy in _enemies.keys():
+		_call_later("_attack_enemy", [enemy], _ATTACK_DELAY)
 	_can_attack = false
 	_is_attacking = true
 	_set_later( "_can_attack", true, _ATTACK_COOLDOWN_DURATION)
@@ -182,12 +188,13 @@ func _attack_enemy() -> void:
 
 func _update_health_bar() -> void:
 	var bar := $HealthBar
-	bar.visible = _hp < _MAX_HP
-	bar.value = _hp * 100.0 / _MAX_HP
+	bar.size.x = 2.0 * _max_hp
+	bar.visible = _hp < _max_hp
+	bar.value = _hp * 100.0 / _max_hp
 
 
 func _relive() -> void:
-	_hp = _MAX_HP
+	_hp = _max_hp
 	_is_dying = false
 	_update_health_bar()
 	_is_invincible = true

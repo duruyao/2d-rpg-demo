@@ -12,51 +12,53 @@ enum AudioState {
 	ATTACK,
 	DEATH,
 }
-const INPUT_ACTION_ATTACK              := "attack"
-const ANIMATION_DIRECTION_FRONT        := "front_"
-const ANIMATION_DIRECTION_BACK         := "back_"
-const ANIMATION_DIRECTION_SIDE         := "side_"
-const ANIMATION_STATE_IDLE             := "idle"
-const ANIMATION_STATE_MOVE             := "move"
-const ANIMATION_STATE_ATTACK           := "attack"
-const ANIMATION_STATE_DEATH            := "death"
-const _MOVE_SPEED                      := 40.0
-const _MAX_HP                          := 150.0
-const _ATTACK_DAMAGE                   := 10.0
-const _ATTACK_COOLDOWN_DURATION        := 3.0
-const _ATTACK_ANIMATION_DURATION       := 1.5
-const _ATTACK_DELAY                    := 1.2
-const _DEATH_ANIMATION_DURATION        := 1.0
-const _FREEZE_DURATION                 := 2.0
-var _hp                                := _MAX_HP
+const INPUT_ACTION_ATTACK        := "attack"
+const ANIMATION_DIRECTION_FRONT  := "front_"
+const ANIMATION_DIRECTION_BACK   := "back_"
+const ANIMATION_DIRECTION_SIDE   := "side_"
+const ANIMATION_STATE_IDLE       := "idle"
+const ANIMATION_STATE_MOVE       := "move"
+const ANIMATION_STATE_ATTACK     := "attack"
+const ANIMATION_STATE_DEATH      := "death"
+const _ATTACK_COOLDOWN_DURATION  := 3.0
+const _ATTACK_ANIMATION_DURATION := 1.5
+const _ATTACK_DELAY              := 1.2
+const _DEATH_ANIMATION_DURATION  := 1.0
+const _FREEZE_DURATION           := 2.0
+@export var _max_hp := 150.0
+@export var _move_speed := 40.0
+@export var _attack_damage := 10.0
+
+var _hp                                := 0.0
 var _direction                         := Vector2.DOWN
 var _can_attack                        := true
-var _should_attack                     := false
 var _is_attacking                      := false
 var _is_dying                          := false
 var _is_near_entrance                  := false
 var _is_freezing                       := false
-var _player: Node2D                    =  null
+var _targets                           := {}
+var _players                           := {}
 var _entrance: Area2D                  =  null
 var _audio_player: AudioStreamPlayer2D =  null
 
 
 func _ready() -> void:
+	_hp = _max_hp
 	$HealthBar.visible = false
 	$AnimatedSprite2D.play(ANIMATION_DIRECTION_FRONT + ANIMATION_STATE_IDLE)
 
 
 func _physics_process(_delta: float) -> void:
-	_get_player()
+	_get_target()
 	if not is_alive():
 		if not _is_dying:
 			_play_animation(AnimationState.DEATH)
 			_play_audio(AudioState.DEATH)
 			_die()
-	elif  _should_attack and _can_attack and _player.is_alive() and not _is_attacking:
+	elif _can_attack and not _no_alive_player_in_hitbox() and not _is_attacking:
 		_play_animation(AnimationState.ATTACK)
 		_play_audio(AudioState.ATTACK)
-		_attack_player()
+		_try_attack_players()
 	elif velocity.length() != 0 and not _is_attacking:
 		_play_animation(AnimationState.MOVE)
 		_play_audio(AudioState.MOVE)
@@ -68,22 +70,22 @@ func _physics_process(_delta: float) -> void:
 
 func _on_detection_area_body_entered(body: Node2D) -> void:
 	if body.is_in_group(Global.PLAYER_GROUP):
-		_player = body
+		_targets[body] = {}
 
 
 func _on_detection_area_body_exited(body: Node2D) -> void:
 	if body.is_in_group(Global.PLAYER_GROUP):
-		_player = null
+		_targets.erase(body)
 
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
 	if body.is_in_group(Global.PLAYER_GROUP):
-		_should_attack = true
+		_players[body] = {}
 
 
 func _on_hitbox_body_exited(body: Node2D) -> void:
 	if body.is_in_group(Global.PLAYER_GROUP):
-		_should_attack = false
+		_players.erase(body)
 
 
 func _on_detection_area_area_entered(area: Area2D) -> void:
@@ -123,17 +125,20 @@ func _call_later(method: StringName, args: Array = [], delay: float = 0.0, objec
 		object.callv(method, args)
 
 
-func _get_player() -> void:
+func _get_target() -> void:
 	velocity = Vector2.ZERO
 	if _is_near_entrance and _entrance:
 		if not _is_freezing: # NOTE: _entrance.global_position is (0, 0)
 			_direction = (_entrance.physics_global_position() - global_position).normalized()
-			velocity = -1 * _direction * _MOVE_SPEED * int(is_alive())
+			velocity = -1 * _direction * _move_speed * int(is_alive())
 			_is_freezing = true
 			_set_later("_is_freezing", false, _FREEZE_DURATION)
-	elif _player and not _should_attack:
-		_direction = (_player.global_position - global_position).normalized()
-		velocity = _direction * _MOVE_SPEED * int(is_alive())
+	elif _no_alive_player_in_hitbox() and not _targets.is_empty():
+		for target in _targets.keys():
+			if target and target.is_alive():
+				_direction = (target.global_position - global_position).normalized()
+				velocity = _direction * _move_speed * int(is_alive())
+				break
 
 
 func _play_animation(state: AnimationState) -> void:
@@ -177,11 +182,15 @@ func _play_audio(state: AudioState) -> void:
 			_audio_player.play()
 
 
-func _attack_player() -> void:
-	# TODO: improve enemy lock system
-	if _player.has_method("take_damage"):
-		print_debug("%s's HP: %.0f - %.0f =" % [_player.name, _player.hp(), _ATTACK_DAMAGE])
-		_call_later("take_damage", [_ATTACK_DAMAGE], _ATTACK_DELAY, _player)
+func _attack_player(player: Node2D) -> void:
+	if player and _players.has(player):
+		player.take_damage(_attack_damage)
+
+
+func _try_attack_players() -> void:
+	# support attacking multiple players
+	for player in _players.keys():
+		_call_later("_attack_player", [player], _ATTACK_DELAY)
 	_can_attack = false
 	_is_attacking = true
 	_set_later( "_can_attack", true, _ATTACK_COOLDOWN_DURATION)
@@ -190,10 +199,18 @@ func _attack_player() -> void:
 
 func _update_health_bar() -> void:
 	var bar := $HealthBar
-	bar.visible = _hp < _MAX_HP
-	bar.value = _hp * 100.0 / _MAX_HP
+	bar.size.x = 2.0 * _max_hp
+	bar.visible = _hp < _max_hp
+	bar.value = _hp * 100.0 / _max_hp
 
 
 func _die() -> void:
 	_is_dying = true
 	_call_later("queue_free", [], _DEATH_ANIMATION_DURATION)
+
+
+func _no_alive_player_in_hitbox() -> bool:
+	for player in _players.keys():
+		if player and player.is_alive():
+			return false
+	return true

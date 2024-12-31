@@ -459,7 +459,7 @@ radius = 80.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_w65rh"]
 
-[node name="Enemy" type="CharacterBody2D"]
+[node name="Enemy" type="CharacterBody2D" groups=["Enemy"]]
 collision_layer = 5
 collision_mask = 9
 motion_mode = 1
@@ -492,9 +492,9 @@ shape = SubResource("CircleShape2D_w65rh")
 [node name="HealthBar" type="ProgressBar" parent="."]
 modulate = Color(1, 0, 0, 1)
 offset_left = -30.0
-offset_top = 8.0
+offset_top = 7.0
 offset_right = 270.0
-offset_bottom = 35.0
+offset_bottom = 34.0
 scale = Vector2(0.2, 0.2)
 show_percentage = false
 
