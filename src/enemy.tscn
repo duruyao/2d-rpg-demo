@@ -1,7 +1,10 @@
-[gd_scene load_steps=63 format=3 uid="uid://d4kx2ogeb2cb7"]
+[gd_scene load_steps=66 format=3 uid="uid://d4kx2ogeb2cb7"]
 
 [ext_resource type="Script" path="res://src/enemy.gd" id="1_8nhbk"]
 [ext_resource type="Texture2D" uid="uid://dg0lxv5qynxbh" path="res://assets/characters/slime.png" id="1_flhan"]
+[ext_resource type="AudioStream" uid="uid://c6wtjpjcmlotm" path="res://assets/audios/enemy_move.wav" id="3_a142m"]
+[ext_resource type="AudioStream" uid="uid://b381c7qassa1q" path="res://assets/audios/enemy_attack.wav" id="4_1ssht"]
+[ext_resource type="AudioStream" uid="uid://8los7qfbkeku" path="res://assets/audios/enemy_death.wav" id="5_ea4gr"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_dfwun"]
 atlas = ExtResource("1_flhan")
@@ -494,6 +497,16 @@ offset_right = 270.0
 offset_bottom = 35.0
 scale = Vector2(0.2, 0.2)
 show_percentage = false
+
+[node name="MoveSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_a142m")
+
+[node name="AttackSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_1ssht")
+
+[node name="DeathSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("5_ea4gr")
+volume_db = 10.0
 
 [connection signal="area_entered" from="DetectionArea" to="." method="_on_detection_area_area_entered"]
 [connection signal="area_exited" from="DetectionArea" to="." method="_on_detection_area_area_exited"]

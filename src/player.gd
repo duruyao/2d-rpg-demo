@@ -1,44 +1,53 @@
 extends CharacterBody2D
 
-enum State {
+enum AnimationState {
 	IDLE,
 	MOVE,
 	ATTACK,
 	DEATH,
 }
-const INPUT_ACTION_MOVE_LEFT     := "move_left"
-const INPUT_ACTION_MOVE_RIGHT    := "move_right"
-const INPUT_ACTION_MOVE_UP       := "move_up"
-const INPUT_ACTION_MOVE_DOWN     := "move_down"
-const INPUT_ACTION_RUN           := "run"
-const INPUT_ACTION_ATTACK        := "attack"
-const ANIMATION_DIRECTION_FRONT  := "front_"
-const ANIMATION_DIRECTION_BACK   := "back_"
-const ANIMATION_DIRECTION_SIDE   := "side_"
-const ANIMATION_STATE_IDLE       := "idle"
-const ANIMATION_STATE_MOVE       := "move"
-const ANIMATION_STATE_ATTACK     := "attack"
-const ANIMATION_STATE_DEATH      := "death"
-const _WALK_SPEED                := 60.0
-const _RUN_SPEED                 := 160.0
-const _MAX_HP                    := 100.0
-const _ATTACK_DAMAGE             := 20.0
-const _ATTACK_COOLDOWN_DURATION  := 1.0
-const _ATTACK_ANIMATION_DURATION := 1.0
-const _ATTACK_DELAY              := 0.3
-const _DEATH_ANIMATION_DURATION  := 1.0
-const _RELIVE_COOLDOWN_DURATION  := 5.0
-const _INVINCIBILITY_DURATION    := 1.5
-var _hp                          := _MAX_HP
-var _direction                   := Vector2.DOWN
-var _can_attack                  := true
-var _should_attack               := false
-var _is_attacking                := false
-var _is_dying                    := false
-var _is_invincible               := false
-var _enemy: Node2D               =  null
-var _field_camera: Camera2D      =  null
-var _canyon_camera: Camera2D     =  null
+enum AudioState {
+	IDLE,
+	WALK,
+	RUN,
+	ATTACK,
+	DEATH,
+}
+const INPUT_ACTION_MOVE_LEFT           := "move_left"
+const INPUT_ACTION_MOVE_RIGHT          := "move_right"
+const INPUT_ACTION_MOVE_UP             := "move_up"
+const INPUT_ACTION_MOVE_DOWN           := "move_down"
+const INPUT_ACTION_RUN                 := "run"
+const INPUT_ACTION_ATTACK              := "attack"
+const ANIMATION_DIRECTION_FRONT        := "front_"
+const ANIMATION_DIRECTION_BACK         := "back_"
+const ANIMATION_DIRECTION_SIDE         := "side_"
+const ANIMATION_STATE_IDLE             := "idle"
+const ANIMATION_STATE_MOVE             := "move"
+const ANIMATION_STATE_ATTACK           := "attack"
+const ANIMATION_STATE_DEATH            := "death"
+const _WALK_SPEED                      := 60.0
+const _RUN_SPEED                       := 160.0
+const _MAX_HP                          := 100.0
+const _ATTACK_DAMAGE                   := 20.0
+const _ATTACK_COOLDOWN_DURATION        := 1.0
+const _ATTACK_ANIMATION_DURATION       := 1.0
+const _ATTACK_DELAY                    := 0.3
+const _DEATH_ANIMATION_DURATION        := 1.0
+const _RELIVE_COOLDOWN_DURATION        := 5.0
+const _INVINCIBILITY_DURATION          := 1.5
+var _hp                                := _MAX_HP
+var _direction                         := Vector2.DOWN
+var _should_run                        := false
+var _can_attack                        := true
+var _should_attack                     := false
+var _is_attacking                      := false
+var _is_dying                          := false
+var _is_invincible                     := false
+var _enemy: Node2D                     =  null
+var _field_camera: Camera2D            =  null
+var _canyon_camera: Camera2D           =  null
+var _audio_player: AudioStreamPlayer2D =  null
 
 
 func _ready() -> void:
@@ -53,15 +62,19 @@ func _physics_process(_delta: float) -> void:
 	_get_input()
 	if not is_alive():
 		if not _is_dying:
-			_play_animation(State.DEATH)
+			_play_animation(AnimationState.DEATH)
+			_play_audio(AudioState.DEATH)
 			_die()
 	elif  _should_attack and _can_attack and not _is_attacking:
-		_play_animation(State.ATTACK)
+		_play_animation(AnimationState.ATTACK)
+		_play_audio(AudioState.ATTACK)
 		_attack_enemy()
 	elif velocity.length() != 0 and not _is_attacking:
-		_play_animation(State.MOVE)
+		_play_animation(AnimationState.MOVE)
+		_play_audio(AudioState.RUN if _should_run else AudioState.WALK)
 	elif not _is_attacking:
-		_play_animation(State.IDLE)
+		_play_animation(AnimationState.IDLE)
+		_play_audio(AudioState.IDLE)
 	move_and_slide()
 
 
@@ -110,15 +123,13 @@ func _get_input() -> void:
 	var input_dir := Input.get_vector(INPUT_ACTION_MOVE_LEFT, INPUT_ACTION_MOVE_RIGHT, INPUT_ACTION_MOVE_UP, INPUT_ACTION_MOVE_DOWN)
 	if input_dir.length() > 0:
 		_direction = input_dir
-	var speed := _WALK_SPEED
-	if Input.is_action_pressed(INPUT_ACTION_RUN):
-		speed = _RUN_SPEED
-	velocity = input_dir * speed * int(is_alive())
+	_should_run = Input.is_action_pressed(INPUT_ACTION_RUN)
 	_should_attack = Input.is_action_just_pressed(INPUT_ACTION_ATTACK)
+	velocity =  input_dir * (_RUN_SPEED if _should_run else _WALK_SPEED) * int(is_alive())
 
 
-func _play_animation(state: State) -> void:
-	if State.DEATH == state:
+func _play_animation(state: AnimationState) -> void:
+	if AnimationState.DEATH == state:
 		$AnimatedSprite2D.play(ANIMATION_STATE_DEATH)
 		return
 	var anim_name := ""
@@ -130,13 +141,31 @@ func _play_animation(state: State) -> void:
 		Vector2.DOWN: ANIMATION_DIRECTION_FRONT,
 	}[anim_dir]
 	anim_name += {
-		State.IDLE: ANIMATION_STATE_IDLE,
-		State.MOVE: ANIMATION_STATE_MOVE,
-		State.ATTACK: ANIMATION_STATE_ATTACK,
-		State.DEATH: ANIMATION_STATE_DEATH,
+		AnimationState.IDLE: ANIMATION_STATE_IDLE,
+		AnimationState.MOVE: ANIMATION_STATE_MOVE,
+		AnimationState.ATTACK: ANIMATION_STATE_ATTACK,
+		AnimationState.DEATH: ANIMATION_STATE_DEATH,
 	}[state]
 	$AnimatedSprite2D.flip_h = Vector2.LEFT == anim_dir
 	$AnimatedSprite2D.play(anim_name)
+
+
+func _play_audio(state: AudioState) -> void:
+	var next_audio_player: AudioStreamPlayer2D = null
+	next_audio_player = {
+		AudioState.IDLE: null,
+		AudioState.WALK: $WalkSoundPlayer,
+		AudioState.RUN: $RunSoundPlayer,
+		AudioState.ATTACK: $AttackSoundPlayer,
+		AudioState.DEATH: $DeathSoundPlayer,
+	}[state]
+	if next_audio_player != _audio_player or AudioState.ATTACK == state:
+		if _audio_player and _audio_player.is_playing():
+			_audio_player.stop()
+			_audio_player = null
+		if next_audio_player:
+			_audio_player = next_audio_player
+			_audio_player.play()
 
 
 func _attack_enemy() -> void:

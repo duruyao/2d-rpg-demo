@@ -1,7 +1,11 @@
-[gd_scene load_steps=57 format=3 uid="uid://b0eg5eoe1q017"]
+[gd_scene load_steps=61 format=3 uid="uid://b0eg5eoe1q017"]
 
 [ext_resource type="Script" path="res://src/player.gd" id="1_1jxpc"]
 [ext_resource type="Texture2D" uid="uid://dxneqnmkljfqh" path="res://assets/characters/player.png" id="2_xhe4k"]
+[ext_resource type="AudioStream" uid="uid://x5w8k2n7uttl" path="res://assets/audios/player_walk.wav" id="3_nofxg"]
+[ext_resource type="AudioStream" uid="uid://dy2wcy3dpn75d" path="res://assets/audios/player_run.wav" id="4_76dp1"]
+[ext_resource type="AudioStream" uid="uid://ntl3th6vpufm" path="res://assets/audios/player_attack.wav" id="5_ykvxw"]
+[ext_resource type="AudioStream" uid="uid://d3bxtgd5jkax7" path="res://assets/audios/player_death.wav" id="6_0gsif"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_n27r5"]
 atlas = ExtResource("2_xhe4k")
@@ -471,6 +475,22 @@ offset_right = 180.0
 offset_bottom = 33.0
 scale = Vector2(0.2, 0.2)
 show_percentage = false
+
+[node name="WalkSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_nofxg")
+volume_db = -5.0
+
+[node name="RunSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_76dp1")
+volume_db = 10.0
+
+[node name="AttackSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("5_ykvxw")
+volume_db = -5.0
+
+[node name="DeathSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("6_0gsif")
+volume_db = -10.0
 
 [connection signal="body_entered" from="Hitbox" to="." method="_on_hitbox_body_entered"]
 [connection signal="body_exited" from="Hitbox" to="." method="_on_hitbox_body_exited"]

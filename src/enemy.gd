@@ -1,37 +1,44 @@
 extends CharacterBody2D
 
-enum State {
+enum AnimationState {
 	IDLE,
 	MOVE,
 	ATTACK,
 	DEATH,
 }
-const INPUT_ACTION_ATTACK        := "attack"
-const ANIMATION_DIRECTION_FRONT  := "front_"
-const ANIMATION_DIRECTION_BACK   := "back_"
-const ANIMATION_DIRECTION_SIDE   := "side_"
-const ANIMATION_STATE_IDLE       := "idle"
-const ANIMATION_STATE_MOVE       := "move"
-const ANIMATION_STATE_ATTACK     := "attack"
-const ANIMATION_STATE_DEATH      := "death"
-const _MOVE_SPEED                := 40.0
-const _MAX_HP                    := 150.0
-const _ATTACK_DAMAGE             := 10.0
-const _ATTACK_COOLDOWN_DURATION  := 3.0
-const _ATTACK_ANIMATION_DURATION := 1.5
-const _ATTACK_DELAY              := 1.2
-const _DEATH_ANIMATION_DURATION  := 1.0
-const _FREEZE_DURATION           := 2.0
-var _hp                          := _MAX_HP
-var _direction                   := Vector2.DOWN
-var _can_attack                  := true
-var _should_attack               := false
-var _is_attacking                := false
-var _is_dying                    := false
-var _is_near_entrance            := false
-var _is_freezing                 := false
-var _player: Node2D              =  null
-var _entrance: Area2D            =  null
+enum AudioState {
+	IDLE,
+	MOVE,
+	ATTACK,
+	DEATH,
+}
+const INPUT_ACTION_ATTACK              := "attack"
+const ANIMATION_DIRECTION_FRONT        := "front_"
+const ANIMATION_DIRECTION_BACK         := "back_"
+const ANIMATION_DIRECTION_SIDE         := "side_"
+const ANIMATION_STATE_IDLE             := "idle"
+const ANIMATION_STATE_MOVE             := "move"
+const ANIMATION_STATE_ATTACK           := "attack"
+const ANIMATION_STATE_DEATH            := "death"
+const _MOVE_SPEED                      := 40.0
+const _MAX_HP                          := 150.0
+const _ATTACK_DAMAGE                   := 10.0
+const _ATTACK_COOLDOWN_DURATION        := 3.0
+const _ATTACK_ANIMATION_DURATION       := 1.5
+const _ATTACK_DELAY                    := 1.2
+const _DEATH_ANIMATION_DURATION        := 1.0
+const _FREEZE_DURATION                 := 2.0
+var _hp                                := _MAX_HP
+var _direction                         := Vector2.DOWN
+var _can_attack                        := true
+var _should_attack                     := false
+var _is_attacking                      := false
+var _is_dying                          := false
+var _is_near_entrance                  := false
+var _is_freezing                       := false
+var _player: Node2D                    =  null
+var _entrance: Area2D                  =  null
+var _audio_player: AudioStreamPlayer2D =  null
 
 
 func _ready() -> void:
@@ -43,15 +50,19 @@ func _physics_process(_delta: float) -> void:
 	_get_player()
 	if not is_alive():
 		if not _is_dying:
-			_play_animation(State.DEATH)
+			_play_animation(AnimationState.DEATH)
+			_play_audio(AudioState.DEATH)
 			_die()
 	elif  _should_attack and _can_attack and _player.is_alive() and not _is_attacking:
-		_play_animation(State.ATTACK)
+		_play_animation(AnimationState.ATTACK)
+		_play_audio(AudioState.ATTACK)
 		_attack_player()
 	elif velocity.length() != 0 and not _is_attacking:
-		_play_animation(State.MOVE)
+		_play_animation(AnimationState.MOVE)
+		_play_audio(AudioState.MOVE)
 	elif not _is_attacking:
-		_play_animation(State.IDLE)
+		_play_animation(AnimationState.IDLE)
+		_play_audio(AudioState.IDLE)
 	move_and_slide()
 
 
@@ -117,7 +128,7 @@ func _get_player() -> void:
 	if _is_near_entrance and _entrance:
 		if not _is_freezing: # NOTE: _entrance.global_position is (0, 0)
 			_direction = (_entrance.physics_global_position() - global_position).normalized()
-			velocity = _direction * _MOVE_SPEED * int(is_alive()) * -1
+			velocity = -1 * _direction * _MOVE_SPEED * int(is_alive())
 			_is_freezing = true
 			_set_later("_is_freezing", false, _FREEZE_DURATION)
 	elif _player and not _should_attack:
@@ -125,8 +136,8 @@ func _get_player() -> void:
 		velocity = _direction * _MOVE_SPEED * int(is_alive())
 
 
-func _play_animation(state: State) -> void:
-	if State.DEATH == state:
+func _play_animation(state: AnimationState) -> void:
+	if AnimationState.DEATH == state:
 		$AnimatedSprite2D.play(ANIMATION_STATE_DEATH)
 		return
 	var anim_name := ""
@@ -138,13 +149,32 @@ func _play_animation(state: State) -> void:
 		Vector2.DOWN: ANIMATION_DIRECTION_FRONT,
 	}[anim_dir]
 	anim_name += {
-		State.IDLE: ANIMATION_STATE_IDLE,
-		State.MOVE: ANIMATION_STATE_MOVE,
-		State.ATTACK: ANIMATION_STATE_ATTACK,
-		State.DEATH: ANIMATION_STATE_DEATH,
+		AnimationState.IDLE: ANIMATION_STATE_IDLE,
+		AnimationState.MOVE: ANIMATION_STATE_MOVE,
+		AnimationState.ATTACK: ANIMATION_STATE_ATTACK,
+		AnimationState.DEATH: ANIMATION_STATE_DEATH,
 	}[state]
 	$AnimatedSprite2D.flip_h = Vector2.LEFT == anim_dir
 	$AnimatedSprite2D.play(anim_name)
+
+
+func _play_audio(state: AudioState) -> void:
+	var next_audio_player: AudioStreamPlayer2D = null
+	next_audio_player = {
+		AudioState.IDLE: null,
+		AudioState.MOVE: $MoveSoundPlayer,
+		AudioState.ATTACK: $AttackSoundPlayer,
+		AudioState.DEATH: $DeathSoundPlayer,
+	}[state]
+	if next_audio_player != _audio_player or AudioState.ATTACK == state:
+		if _audio_player and _audio_player.is_playing():
+			_audio_player.stop()
+			_audio_player = null
+		if next_audio_player:
+			_audio_player = next_audio_player
+			if AudioState.ATTACK == state:
+				await get_tree().create_timer(_ATTACK_DELAY).timeout
+			_audio_player.play()
 
 
 func _attack_player() -> void:
