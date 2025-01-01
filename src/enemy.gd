@@ -12,41 +12,40 @@ enum AudioState {
 	ATTACK,
 	DEATH,
 }
-const INPUT_ACTION_ATTACK        := "attack"
-const ANIMATION_DIRECTION_FRONT  := "front_"
-const ANIMATION_DIRECTION_BACK   := "back_"
-const ANIMATION_DIRECTION_SIDE   := "side_"
-const ANIMATION_STATE_IDLE       := "idle"
-const ANIMATION_STATE_MOVE       := "move"
-const ANIMATION_STATE_ATTACK     := "attack"
-const ANIMATION_STATE_DEATH      := "death"
-const _ATTACK_COOLDOWN_DURATION  := 3.0
-const _ATTACK_ANIMATION_DURATION := 1.5
-const _ATTACK_DELAY              := 1.2
-const _DEATH_ANIMATION_DURATION  := 1.0
-const _FREEZE_DURATION           := 1.0
+const INPUT_ACTION_ATTACK       := "attack"
+const ANIMATION_DIRECTION_FRONT := "front_"
+const ANIMATION_DIRECTION_BACK  := "back_"
+const ANIMATION_DIRECTION_SIDE  := "side_"
+const ANIMATION_STATE_IDLE      := "idle"
+const ANIMATION_STATE_MOVE      := "move"
+const ANIMATION_STATE_ATTACK    := "attack"
+const ANIMATION_STATE_DEATH     := "death"
 @export var _max_hp := 150.0
 @export var _move_speed := 40.0
-@export var _attack_damage := 10.0
 @export var _sprite_color := Color(1, 1, 1, 1)
+@export var _attack_delay := 1.2
+@export var _attack_damage := 10.0
+@export var _attack_duration := 0.6
+@export var _attack_cooldown_duration := 3.0
+@export var _attack_animation_duration := 1.5
+@export var _death_animation_duration := 1.0
 
 var _hp                                := 0.0
 var _direction                         := Vector2.DOWN
 var _can_attack                        := true
 var _is_attacking                      := false
 var _is_dying                          := false
-var _is_near_entrance                  := false
-var _is_freezing                       := false
+var _velocity_when_taing_tamage        := Vector2.ZERO
+var _is_taking_damage                  := false
 var _targets                           := {}
 var _players                           := {}
-var _entrance: Area2D                  =  null
 var _audio_player: AudioStreamPlayer2D =  null
 
 
 func _ready() -> void:
 	_hp = _max_hp
 	$HealthBar.visible = false
-	$AnimatedSprite2D.modulate = _sprite_color
+	$AnimatedSprite2D.self_modulate = _sprite_color
 	$AnimatedSprite2D.play(ANIMATION_DIRECTION_FRONT + ANIMATION_STATE_IDLE)
 
 
@@ -90,18 +89,6 @@ func _on_hitbox_body_exited(body: Node2D) -> void:
 		_players.erase(body)
 
 
-func _on_detection_area_area_entered(area: Area2D) -> void:
-	if area.is_in_group(Global.EXIT_GROUP):
-		_entrance = area
-		_is_near_entrance = true
-
-
-func _on_detection_area_area_exited(area: Area2D) -> void:
-	if area.is_in_group(Global.EXIT_GROUP):
-		_entrance = null
-		_is_near_entrance = false
-
-
 func hp() -> float:
 	return _hp
 
@@ -110,9 +97,17 @@ func is_alive()-> bool:
 	return _hp > 0.0
 
 
-func take_damage(damage: float) -> void:
-	_hp = min(_hp, _hp - damage)
+func take_damage(damage: Vector2, duration: float) -> void:
+	_hp = min(_hp, _hp - damage.length())
 	_update_health_bar()
+	_velocity_when_taing_tamage = damage * 2.0
+	_is_taking_damage = true
+	_set_later("_is_taking_damage", false, duration)
+	for i in range(duration/0.2):
+		$AnimatedSprite2D.self_modulate = Color.RED
+		await get_tree().create_timer(0.1).timeout
+		$AnimatedSprite2D.self_modulate = _sprite_color
+		await get_tree().create_timer(0.1).timeout
 
 
 func _set_later(property: StringName, value: Variant, delay: float = 0.0, object: Object = self) -> void:
@@ -129,12 +124,8 @@ func _call_later(method: StringName, args: Array = [], delay: float = 0.0, objec
 
 func _get_target() -> void:
 	velocity = Vector2.ZERO
-	if _is_near_entrance and _entrance:
-		if not _is_freezing: # NOTE: _entrance.global_position is (0, 0)
-			_direction = (_entrance.physics_global_position() - global_position).normalized()
-			velocity = -1 * _direction * _move_speed * int(is_alive())
-			_is_freezing = true
-			_set_later("_is_freezing", false, _FREEZE_DURATION)
+	if _is_taking_damage:
+		velocity = _velocity_when_taing_tamage
 	elif _no_alive_player_in_hitbox() and not _targets.is_empty():
 		for target in _targets.keys():
 			if target and target.is_alive():
@@ -180,24 +171,24 @@ func _play_audio(state: AudioState) -> void:
 		if next_audio_player:
 			_audio_player = next_audio_player
 			if AudioState.ATTACK == state:
-				await get_tree().create_timer(_ATTACK_DELAY).timeout
+				await get_tree().create_timer(_attack_delay).timeout
 			if is_inside_tree():
 				_audio_player.play()
 
 
 func _attack_player(player: Node2D) -> void:
 	if player and _players.has(player):
-		player.take_damage(_attack_damage)
+		player.take_damage(_attack_damage * (player.position - position).normalized(), _attack_duration)
 
 
 func _try_attack_players() -> void:
 	# support attacking multiple players
 	for player in _players.keys():
-		_call_later("_attack_player", [player], _ATTACK_DELAY)
+		_call_later("_attack_player", [player], _attack_delay)
 	_can_attack = false
 	_is_attacking = true
-	_set_later( "_can_attack", true, _ATTACK_COOLDOWN_DURATION)
-	_set_later( "_is_attacking", false, _ATTACK_ANIMATION_DURATION)
+	_set_later( "_can_attack", true, _attack_cooldown_duration)
+	_set_later( "_is_attacking", false, _attack_animation_duration)
 
 
 func _update_health_bar() -> void:
@@ -210,7 +201,7 @@ func _update_health_bar() -> void:
 
 func _die() -> void:
 	_is_dying = true
-	_call_later("queue_free", [], _DEATH_ANIMATION_DURATION)
+	_call_later("queue_free", [], _death_animation_duration)
 
 
 func _no_alive_player_in_hitbox() -> bool:

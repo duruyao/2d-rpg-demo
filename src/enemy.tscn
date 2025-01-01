@@ -478,7 +478,7 @@ shape = SubResource("CircleShape2D_5c0eq")
 [node name="DetectionArea" type="Area2D" parent="."]
 position = Vector2(2, 0)
 collision_layer = 0
-collision_mask = 10
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectionArea"]
 shape = SubResource("CircleShape2D_jq1fb")
@@ -510,8 +510,6 @@ stream = ExtResource("4_1ssht")
 stream = ExtResource("5_ea4gr")
 volume_db = 10.0
 
-[connection signal="area_entered" from="DetectionArea" to="." method="_on_detection_area_area_entered"]
-[connection signal="area_exited" from="DetectionArea" to="." method="_on_detection_area_area_exited"]
 [connection signal="body_entered" from="DetectionArea" to="." method="_on_detection_area_body_entered"]
 [connection signal="body_exited" from="DetectionArea" to="." method="_on_detection_area_body_exited"]
 [connection signal="body_entered" from="Hitbox" to="." method="_on_hitbox_body_entered"]

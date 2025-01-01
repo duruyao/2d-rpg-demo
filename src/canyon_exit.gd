@@ -13,7 +13,7 @@ var _next_player_position := {
 								 Global.EAST_EXIT_NODE: Vector2(25, 50),
 								 Global.SOUTH_EXIT_NODE: Vector2(750, 20),
 								 Global.WEST_EXIT_NODE: Vector2(750, 260),
-								 Global.NORTH_EXIT_NODE: Vector2(675, 425),
+								 Global.NORTH_EXIT_NODE: Vector2(640, 425),
 							 }
 
 
