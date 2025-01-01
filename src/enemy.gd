@@ -181,7 +181,8 @@ func _play_audio(state: AudioState) -> void:
 			_audio_player = next_audio_player
 			if AudioState.ATTACK == state:
 				await get_tree().create_timer(_ATTACK_DELAY).timeout
-			_audio_player.play()
+			if is_inside_tree():
+				_audio_player.play()
 
 
 func _attack_player(player: Node2D) -> void:

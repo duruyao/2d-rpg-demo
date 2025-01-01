@@ -169,7 +169,8 @@ func _play_audio(state: AudioState) -> void:
 			_audio_player = null
 		if next_audio_player:
 			_audio_player = next_audio_player
-			_audio_player.play()
+			if is_inside_tree():
+				_audio_player.play()
 
 
 func _attack_enemy(enemy: Node2D)->void:
