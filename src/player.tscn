@@ -469,6 +469,7 @@ drag_vertical_enabled = true
 
 [node name="HealthBar" type="ProgressBar" parent="."]
 modulate = Color(0, 1, 0, 1)
+z_index = 10
 offset_left = -20.0
 offset_top = 8.0
 offset_right = 180.0
