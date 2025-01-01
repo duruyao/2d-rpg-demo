@@ -36,6 +36,7 @@ const _INVINCIBILITY_DURATION    := 1.5
 @export var _run_speed := 160.0
 @export var _max_hp := 100.0
 @export var _attack_damage := 20.0
+@export var _sprite_color := Color(1, 1, 1, 1)
 
 var _hp                                := 0.0
 var _direction                         := Vector2.DOWN
@@ -57,6 +58,7 @@ func _ready() -> void:
 	_field_camera = $FieldCamera
 	_canyon_camera = $CanyonCamera
 	change_camera(Global.FIELD_SCENE)
+	$AnimatedSprite2D.modulate = _sprite_color
 	$AnimatedSprite2D.play(ANIMATION_DIRECTION_FRONT + ANIMATION_STATE_IDLE)
 
 
@@ -189,6 +191,7 @@ func _try_attack_enemies() -> void:
 func _update_health_bar() -> void:
 	var bar := $HealthBar
 	bar.size.x = 2.0 * _max_hp
+	bar.position.x = -0.2 * _max_hp
 	bar.visible = _hp < _max_hp
 	bar.value = _hp * 100.0 / _max_hp
 

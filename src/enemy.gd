@@ -24,10 +24,11 @@ const _ATTACK_COOLDOWN_DURATION  := 3.0
 const _ATTACK_ANIMATION_DURATION := 1.5
 const _ATTACK_DELAY              := 1.2
 const _DEATH_ANIMATION_DURATION  := 1.0
-const _FREEZE_DURATION           := 2.0
+const _FREEZE_DURATION           := 1.0
 @export var _max_hp := 150.0
 @export var _move_speed := 40.0
 @export var _attack_damage := 10.0
+@export var _sprite_color := Color(1, 1, 1, 1)
 
 var _hp                                := 0.0
 var _direction                         := Vector2.DOWN
@@ -45,6 +46,7 @@ var _audio_player: AudioStreamPlayer2D =  null
 func _ready() -> void:
 	_hp = _max_hp
 	$HealthBar.visible = false
+	$AnimatedSprite2D.modulate = _sprite_color
 	$AnimatedSprite2D.play(ANIMATION_DIRECTION_FRONT + ANIMATION_STATE_IDLE)
 
 
@@ -200,6 +202,7 @@ func _try_attack_players() -> void:
 func _update_health_bar() -> void:
 	var bar := $HealthBar
 	bar.size.x = 2.0 * _max_hp
+	bar.position.x = -0.2 * _max_hp
 	bar.visible = _hp < _max_hp
 	bar.value = _hp * 100.0 / _max_hp
 

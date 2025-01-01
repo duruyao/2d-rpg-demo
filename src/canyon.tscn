@@ -173,6 +173,8 @@ position = Vector2(257, 298)
 shape = SubResource("RectangleShape2D_07rkq")
 
 [node name="West" type="Area2D" parent="Exits" groups=["Exit"]]
+collision_layer = 8
+collision_mask = 2
 script = ExtResource("4_l86qh")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Exits/West"]
@@ -190,8 +192,10 @@ shape = SubResource("RectangleShape2D_e2umc")
 
 [node name="Enemy" parent="." instance=ExtResource("5_vy7yu")]
 position = Vector2(250, 135)
-_max_hp = 450.0
-_attack_damage = 30.0
+_max_hp = 500.0
+_move_speed = 70.0
+_attack_damage = 33.0
+_sprite_color = Color(0.0196078, 0.686275, 1, 1)
 
 [connection signal="body_entered" from="Exits/East" to="Exits/East" method="_on_body_entered"]
 [connection signal="body_entered" from="Exits/South" to="Exits/South" method="_on_body_entered"]
